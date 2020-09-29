@@ -2,6 +2,7 @@ import argparse
 import os
 import subprocess
 import sys
+import time
 import traceback
 from multiprocessing import Queue
 from multiprocessing.context import Process
@@ -69,7 +70,7 @@ class ROSBridge:
         def read_data(event):
             data: Duckiebot1Observations
             try:
-                data = qimages.get(block=False, timeout=0.0)
+                data = self.qimages.get(block=False, timeout=0.0)
             except Empty:
                 return
             logger.info("Received observations")
@@ -143,37 +144,41 @@ class AIDOAgent:
 
 
 def wrap_for_errors(f):
-    def f2(*args, **kwargs):
+    def f2(q_control, *args, **kwargs):
         logger.info(f"{f.__name__} started")
         try:
-            f(*args, **kwargs)
+            f(q_control, *args, **kwargs)
         except:
             logger.error(f"{f.__name__} terminated", traceback=traceback.format_exc())
+            q_control.put((f.__name__, "error"))
             sys.exit(3)
         else:
+            q_control.put((f.__name__, "finished"))
             logger.info(f"{f.__name__} terminated gracefully")
 
     return f2
 
 
 @wrap_for_errors
-def run_bridge(q_images, q_commands, q_init):
+def run_bridge(q_control, q_images, q_commands):
     logger.info("run_bridge started")
     bridge = ROSBridge(q_images, q_commands)
     bridge.go()
     logger.info("run_bridge ended")
+    time.sleep(1000)
 
 
 @wrap_for_errors
-def run_agent(q_images, q_commands, q_init):
+def run_agent(q_control, q_images, q_commands, q_init):
     logger.info("run_agent started")
     agent = AIDOAgent(q_images, q_commands)
-    wrap_direct(agent, protocol_agent_duckiebot1)
+    wrap_direct(agent, protocol_agent_duckiebot1, args=[])
     logger.info("run_agent ended")
+    time.sleep(1000)
 
 
 @wrap_for_errors
-def run_roslaunch(launch_file: str, q_init: Queue):
+def run_roslaunch(q_control, launch_file: str, q_init: Queue):
     logger.info("run_roslaunch started")
     my_env = os.environ.copy()
     command = f"roslaunch {launch_file}"
@@ -183,6 +188,7 @@ def run_roslaunch(launch_file: str, q_init: Queue):
     )
     p.communicate()
     logger.info("run_roslaunch ended")
+    time.sleep(1000)
 
 
 @wrap_for_errors
@@ -198,24 +204,28 @@ def run_ros_bridge(launch_file: str):
     logger.info(f"run_ros_bridge launch_file = {launch_file}")
     q_images = Queue()
     q_commands = Queue()
-    q_init = Queue()
+    q_control = Queue()
 
     logger.info(f"starting run_ros_launch")
     p_roslaunch = Process(
-        target=run_roslaunch, args=(launch_file, q_init,), name="roslaunch"
+        target=run_roslaunch, args=(q_control, launch_file,), name="roslaunch"
     )
     # q_init.get()
     logger.info(f"starting run_bridge")
     p_rosnode = Process(
-        target=run_bridge, args=(q_images, q_commands, q_init), name="rosnode"
+        target=run_bridge, args=(q_control, q_images, q_commands), name="rosnode"
     )
     p_rosnode.start()
 
     logger.info(f"starting run_agent")
     p_agent = Process(
-        target=run_agent, args=(q_images, q_commands, q_init), name="aido_agent"
+        target=run_agent, args=(q_control, q_images, q_commands), name="aido_agent"
     )
     p_agent.start()
+
+    while True:
+        d = q_control.get(block=True)
+        logger.info(f"obtained {d}")
 
     logger.info(f"waiting for agent to finish")
     p_agent.join()
