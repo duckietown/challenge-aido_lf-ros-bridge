@@ -26,6 +26,7 @@ from sensor_msgs.msg import CameraInfo, CompressedImage
 
 from .commons import compressed_img_from_rgb, rgb_from_jpg
 
+logger.setLevel(logger.DEBUG)
 __all__ = ["run_ros_bridge", "run_ros_bridge_main"]
 
 
@@ -141,22 +142,29 @@ class AIDOAgent:
 
 
 def run_bridge(q_images, q_commands):
+    logger.info("run_bridge started")
     bridge = ROSBridge(q_images, q_commands)
     bridge.go()
+    logger.info("run_bridge ended")
 
 
 def run_agent(q_images, q_commands):
+    logger.info("run_agent started")
     agent = AIDOAgent(q_images, q_commands)
     wrap_direct(agent, protocol_agent_duckiebot1)
+    logger.info("run_agent ended")
 
 
 def run_roslaunch(launch_file: str, q_init: Queue):
+    logger.info("run_roslaunch started")
     my_env = os.environ.copy()
     command = f"roslaunch {launch_file}"
     logger.info("running", command=command)
     p = subprocess.Popen(
         command, shell=True, env=my_env, stdout=sys.stdout, stderr=sys.stderr
     )
+    p.communicate()
+    logger.info("run_roslaunch ended")
 
 
 def run_ros_bridge_main(args=None):
@@ -168,22 +176,27 @@ def run_ros_bridge_main(args=None):
 
 
 def run_ros_bridge(launch_file: str):
+    logger.info(f"run_ros_bridge launch_file = {launch_file}")
     q_images = Queue()
     q_commands = Queue()
     q_init = Queue()
 
+    logger.info(f"starting run_ros_launch")
     p_roslaunch = Process(
         target=run_roslaunch, args=(launch_file, q_init,), name="roslaunch"
     )
     # q_init.get()
+    logger.info(f"starting run_bridge")
     p_rosnode = Process(
         target=run_bridge, args=(q_images, q_commands, q_init), name="rosnode"
     )
     p_rosnode.start()
 
+    logger.info(f"starting run_agent")
     p_agent = Process(
         target=run_agent, args=(q_images, q_commands, q_init), name="aido_agent"
     )
     p_agent.start()
 
+    logger.info(f"waiting for agent to finish")
     p_agent.join()
