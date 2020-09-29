@@ -57,7 +57,9 @@ description = """
     underline=underline,
 )
 
-console_scripts = []
+console_scripts = [
+    "aido-ros-bridge-launch=duckietown_aido_ros_bridge:run_ros_bridge_main",
+]
 # setup package
 setup(
     name=package_name,

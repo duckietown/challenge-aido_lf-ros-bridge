@@ -1,3 +1,4 @@
+import argparse
 import os
 import subprocess
 import sys
@@ -25,7 +26,7 @@ from sensor_msgs.msg import CameraInfo, CompressedImage
 
 from .commons import compressed_img_from_rgb, rgb_from_jpg
 
-__all__ = ["run_ros_bridge"]
+__all__ = ["run_ros_bridge", "run_ros_bridge_main"]
 
 
 class ROSBridge:
@@ -156,6 +157,14 @@ def run_roslaunch(launch_file: str, q_init: Queue):
     p = subprocess.Popen(
         command, shell=True, env=my_env, stdout=sys.stdout, stderr=sys.stderr
     )
+
+
+def run_ros_bridge_main(args):
+    parser = argparse.ArgumentParser(args)
+    parser.add_argument("--launch", required=True)
+    parsed = parser.parse_args(args)
+    launch = parsed.launch
+    run_ros_bridge(launch)
 
 
 def run_ros_bridge(launch_file: str):
