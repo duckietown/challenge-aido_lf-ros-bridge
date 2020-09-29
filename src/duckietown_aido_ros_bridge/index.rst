@@ -2,17 +2,23 @@
 Pondcleaner package
 ===================
 
-Pond cleaner
+Interface
 -------------
 
-.. automodule:: duckietown_aido_ros_bridge.pondcleaner
+.. automodule:: duckietown_aido_ros_bridge.interface
    :members:
 
 
 
-Main entry points
+Implementation
 -----------------
 
-.. automodule:: duckietown_aido_ros_bridge.demo
+.. automodule:: duckietown_aido_ros_bridge.rosagents
    :members:
 
+
+Utilities
+-----------------
+
+.. automodule:: duckietown_aido_ros_bridge.commons
+   :members:

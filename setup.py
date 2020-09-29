@@ -3,14 +3,16 @@ from setuptools import find_packages, setup
 # :==> Fill in your project data here
 # The package name is the name on PyPI
 # it is not the python module names.
-package_name = 'dt-pondcleaner'
-library_webpage = 'http://github.com/duckietown/template-library'
-maintainer = 'Mack'
-maintainer_email = 'admin@duckietown.org'
-short_description = 'A short description'
+line = "daffy"
+package_name = f"duckietown-aido-ros-bridge-{line}"
+library_webpage = "http://github.com/duckietown/duckietown-aido-ros-bridge"
+maintainer = "Mack"
+maintainer_email = "admin@duckietown.org"
+short_description = "A short description"
 full_description = """
 A longer description.
 """
+
 
 # Read version from the __init__ file
 def get_version_from_source(filename):
@@ -28,7 +30,8 @@ def get_version_from_source(filename):
         raise ValueError(filename)
     return version
 
-version = get_version_from_source('src/duckietown_aido_ros_bridge/__init__.py')
+
+version = get_version_from_source("src/duckietown_aido_ros_bridge/__init__.py")
 
 # read project dependencies
 # NO - dependencies.txt is for testing dependiences - EVERYTHING PINNED
@@ -41,17 +44,20 @@ install_requires = []
 tests_require = []
 
 # compile description
-underline = '=' * (len(package_name) + len(short_description) + 2)
+underline = "=" * (len(package_name) + len(short_description) + 2)
 description = """
 {name}: {short}
 {underline}
 
 {long}
-""".format(name=package_name, short=short_description, long=full_description, underline=underline)
+""".format(
+    name=package_name,
+    short=short_description,
+    long=full_description,
+    underline=underline,
+)
 
-console_scripts = [
-    "dt-pc-demo = duckietown_aido_ros_bridge:dt_pc_demo",
-]
+console_scripts = []
 # setup package
 setup(
     name=package_name,
@@ -61,7 +67,7 @@ setup(
     tests_require=tests_require,
     install_requires=install_requires,
     package_dir={"": "src"},
-    packages=find_packages('./src'),
+    packages=find_packages("./src"),
     long_description=description,
     version=version,
     entry_points={"console_scripts": console_scripts},

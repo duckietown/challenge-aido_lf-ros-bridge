@@ -6,4 +6,4 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-from .bridge import *
+from .interface import run_ros_bridge
