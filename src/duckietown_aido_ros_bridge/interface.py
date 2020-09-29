@@ -1,5 +1,9 @@
 import os
-import time
+import subprocess
+import sys
+from multiprocessing import Queue
+from multiprocessing.context import Process
+from queue import Empty, Queue
 
 import numpy as np
 import rospy
@@ -30,7 +34,11 @@ class ROSBridge:
     updated: bool
     action: np.ndarray
 
-    def __init__(self):
+    def __init__(self, qcommands: Queue, qimages: Queue):
+        self.qcommands = qcommands
+        self.qimages = qimages
+
+    def go(self):
         self.action = np.array([0.0, 0.0])
         self.updated = True
 
@@ -55,10 +63,45 @@ class ROSBridge:
         logger.info(f"Preparing publisher to {topic}; queue_size = {queue_size}")
         self.pub_camera_info = rospy.Publisher(topic, CameraInfo, queue_size=queue_size)
 
+        def read_data(event):
+            data: Duckiebot1Observations
+            try:
+                data = qimages.get(block=False, timeout=0.0)
+            except Empty:
+                return
+            logger.info("Received observations")
+            jpg_data = data.camera.jpg_data
+            obs = rgb_from_jpg(jpg_data)
+
+            img_msg = compressed_img_from_rgb(obs)
+            logger.info("Publishing image to ROS")
+
+            self.pub_image.publish(img_msg)
+            logger.info("Publishing CameraInfo")
+            self.pub_camera_info.publish(CameraInfo())
+
+        rospy.Timer(rospy.Duration(0.01), read_data)
+
         # Initializes the node
         logger.info("Calling rospy.init_node()")
         rospy.init_node("ROSTemplate")
         logger.info("Calling rospy.init_node() successful")
+
+    def on_ros_received_wheels_cmd(self, msg):
+        """
+        Callback to listen to last outputted action from inverse_kinematics node
+        Stores it and sustains same action until new message published on topic
+        """
+        logger.info(f"Received wheels_cmd")
+        vl = msg.vel_left
+        vr = msg.vel_right
+        self.qcommands.put([vl, vr])
+
+
+class AIDOAgent:
+    def __init__(self, qcommands: Queue, qimages: Queue):
+        self.qcommands = qcommands
+        self.qimages = qimages
 
     def init(self, context: Context):
         context.info("init()")
@@ -70,64 +113,68 @@ class ROSBridge:
         context.info("Starting episode %s." % data)
         # TODO should we reset things?
 
-    def on_ros_received_wheels_cmd(self, msg):
-        """
-        Callback to listen to last outputted action from inverse_kinematics node
-        Stores it and sustains same action until new message published on topic
-        """
-        logger.info(f"Received wheels_cmd")
-        vl = msg.vel_left
-        vr = msg.vel_right
-        self.action = np.array([vl, vr])
-        self.updated = True
-
     def on_received_observations(self, context: Context, data: Duckiebot1Observations):
         context.info("Received observations")
-        jpg_data = data.camera.jpg_data
-        obs = rgb_from_jpg(jpg_data)
-
-        img_msg = compressed_img_from_rgb(obs)
-        context.info("Publishing image to ROS")
-
-        self.pub_image.publish(img_msg)
-
-        if not self.updated:
-            vl = vr = 0
-            self.action = np.array([vl, vr])
-            self.updated = True
-        context.info("Publishing CameraInfo")
-        self.pub_camera_info.publish(CameraInfo())
+        self.qimages.put(data)
 
     def on_received_get_commands(self, context: Context, data: GetCommands):
         context.info("Received request for GetCommands")
-        # TODO: let's use a queue here. Performance suffers otherwise.
-        # What you should do is: *get the last command*, if available
-        # otherwise, wait for one command.
-        t0 = time.time()
         MAX_WAIT = 2
-        while not self.updated:
-            context.info("Not update: await")
-            time.sleep(0.05)
-            dt = time.time() - t0
-            if dt > MAX_WAIT:
-                msg = "Received no commands for {MAX_WAIT}s. Bailing out, using previous commands. "
-                context.error(msg)
-                break
+        try:
+            action = self.qcommands.get(block=True, timeout=MAX_WAIT)
+        except Empty:
+            msg = "Received no commands for {MAX_WAIT}s. Bailing out, using previous commands. "
+            context.error(msg)
+            return
 
-        pwm_left, pwm_right = self.action
-        self.updated = False
+        pwm_left, pwm_right = action
 
         grey = RGB(0.5, 0.5, 0.5)
         led_commands = LEDSCommands(grey, grey, grey, grey, grey)
         pwm_commands = PWMCommands(motor_left=pwm_left, motor_right=pwm_right)
         commands = Duckiebot1Commands(pwm_commands, led_commands)
-
         context.write("commands", commands)
 
     def finish(self, context):
         context.info("finish()")
 
 
-def run_ros_bridge():
-    agent = ROSBridge()
+def run_bridge(q_images, q_commands):
+    bridge = ROSBridge(q_images, q_commands)
+    bridge.go()
+
+
+def run_agent(q_images, q_commands):
+    agent = AIDOAgent(q_images, q_commands)
     wrap_direct(agent, protocol_agent_duckiebot1)
+
+
+def run_roslaunch(launch_file: str, q_init: Queue):
+    my_env = os.environ.copy()
+    command = f"roslaunch {launch_file}"
+    logger.info("running", command=command)
+    p = subprocess.Popen(
+        command, shell=True, env=my_env, stdout=sys.stdout, stderr=sys.stderr
+    )
+
+
+def run_ros_bridge(launch_file: str):
+    q_images = Queue()
+    q_commands = Queue()
+    q_init = Queue()
+
+    p_roslaunch = Process(
+        target=run_roslaunch, args=(launch_file, q_init,), name="roslaunch"
+    )
+    # q_init.get()
+    p_rosnode = Process(
+        target=run_bridge, args=(q_images, q_commands, q_init), name="rosnode"
+    )
+    p_rosnode.start()
+
+    p_agent = Process(
+        target=run_agent, args=(q_images, q_commands, q_init), name="aido_agent"
+    )
+    p_agent.start()
+
+    p_agent.join()
