@@ -159,7 +159,7 @@ def run_roslaunch(launch_file: str, q_init: Queue):
     )
 
 
-def run_ros_bridge_main(args):
+def run_ros_bridge_main(args=None):
     parser = argparse.ArgumentParser(args)
     parser.add_argument("--launch", required=True)
     parsed = parser.parse_args(args)
