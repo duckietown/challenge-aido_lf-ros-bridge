@@ -123,13 +123,12 @@ class AIDOAgent:
 
     def on_received_get_commands(self, context: Context, data: GetCommands):
         context.info("Received request for GetCommands")
-        MAX_WAIT = 2
+        MAX_WAIT = 5
         try:
             action = self.qcommands.get(block=True, timeout=MAX_WAIT)
         except Empty:
-            msg = "Received no commands for {MAX_WAIT}s. Bailing out, using previous commands. "
-            context.error(msg)
-            return
+            msg = f"Received no commands for {MAX_WAIT}s. Bailing out "
+            raise Exception(msg)
 
         pwm_left, pwm_right = action
 
