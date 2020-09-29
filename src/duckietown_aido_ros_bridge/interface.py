@@ -34,34 +34,34 @@ class ROSBridge:
         self.action = np.array([0.0, 0.0])
         self.updated = True
 
-    def init(self, context: Context):
-        context.info("init()")
-
         # Get the vehicle name, which comes in as HOSTNAME
         vehicle = os.getenv("HOSTNAME")
-        context.info(f"Using vehicle = {vehicle}")
+        logger.info(f"Using vehicle = {vehicle}")
 
         topic = f"/{vehicle}/wheels_driver_node/wheels_cmd"
-        context.info(f"Subscribing to {topic}")
+        logger.info(f"Subscribing to {topic}")
         rospy.Subscriber(topic, WheelsCmdStamped, self.on_ros_received_wheels_cmd)
 
         # Publishes onto the corrected image topic
         # since image out of simulator is currently rectified
         topic = f"/{vehicle}/camera_node/image/compressed"
         queue_size = 10
-        context.info(f"Preparing publisher to {topic}; queue_size = {queue_size}")
+        logger.info(f"Preparing publisher to {topic}; queue_size = {queue_size}")
         self.pub_image: rospy.Publisher(topic, CompressedImage, queue_size=queue_size)
 
         # Publisher for camera info - needed for the ground_projection
         topic = f"/{vehicle}/camera_node/camera_info"
         queue_size = 1
-        context.info(f"Preparing publisher to {topic}; queue_size = {queue_size}")
+        logger.info(f"Preparing publisher to {topic}; queue_size = {queue_size}")
         self.pub_camera_info = rospy.Publisher(topic, CameraInfo, queue_size=queue_size)
 
         # Initializes the node
-        context.info("Calling rospy.init_node()")
+        logger.info("Calling rospy.init_node()")
         rospy.init_node("ROSTemplate")
-        context.info("Calling rospy.init_node() successful")
+        logger.info("Calling rospy.init_node() successful")
+
+    def init(self, context: Context):
+        context.info("init()")
 
     def on_received_seed(self, context: Context, data: int):
         np.random.seed(data)
