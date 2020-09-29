@@ -83,12 +83,12 @@ class ROSBridge:
             logger.info("Publishing CameraInfo")
             self.pub_camera_info.publish(CameraInfo())
 
-        rospy.Timer(rospy.Duration(0.01), read_data)
-
         # Initializes the node
         logger.info("Calling rospy.init_node()")
         rospy.init_node("ROSTemplate")
         logger.info("Calling rospy.init_node() successful")
+
+        rospy.Timer(rospy.Duration(0.01), read_data)
 
     def on_ros_received_wheels_cmd(self, msg):
         """
