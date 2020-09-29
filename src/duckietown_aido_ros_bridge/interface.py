@@ -10,6 +10,7 @@ from aido_schemas import (
     EpisodeStart,
     GetCommands,
     LEDSCommands,
+    logger,
     protocol_agent_duckiebot1,
     PWMCommands,
     RGB,
@@ -26,32 +27,41 @@ __all__ = ["run_ros_bridge"]
 class ROSBridge:
     pub_image: rospy.Publisher
     pub_camera_info: rospy.Publisher
+    updated: bool
+    action: np.ndarray
+
+    def __init__(self):
+        self.action = np.array([0.0, 0.0])
+        self.updated = True
 
     def init(self, context: Context):
         context.info("init()")
 
         # Get the vehicle name, which comes in as HOSTNAME
         vehicle = os.getenv("HOSTNAME")
-        topic = f"/{vehicle}/wheels_driver_node/wheels_cmd"
-        rospy.Subscriber(topic, WheelsCmdStamped, self.on_ros_received_wheels_cmd)
+        context.info(f"Using vehicle = {vehicle}")
 
-        self.action = np.array([0.0, 0.0])
-        self.updated = True
+        topic = f"/{vehicle}/wheels_driver_node/wheels_cmd"
+        context.info(f"Subscribing to {topic}")
+        rospy.Subscriber(topic, WheelsCmdStamped, self.on_ros_received_wheels_cmd)
 
         # Publishes onto the corrected image topic
         # since image out of simulator is currently rectified
         topic = f"/{vehicle}/camera_node/image/compressed"
-        self.pub_image: rospy.Publisher(topic, CompressedImage, queue_size=10)
+        queue_size = 10
+        context.info(f"Preparing publisher to {topic}; queue_size = {queue_size}")
+        self.pub_image: rospy.Publisher(topic, CompressedImage, queue_size=queue_size)
 
         # Publisher for camera info - needed for the ground_projection
         topic = f"/{vehicle}/camera_node/camera_info"
-        self.pub_camera_info = rospy.Publisher(topic, CameraInfo, queue_size=1)
+        queue_size = 1
+        context.info(f"Preparing publisher to {topic}; queue_size = {queue_size}")
+        self.pub_camera_info = rospy.Publisher(topic, CameraInfo, queue_size=queue_size)
 
         # Initializes the node
+        context.info("Calling rospy.init_node()")
         rospy.init_node("ROSTemplate")
-
-        # 15Hz ROS Cycle - TODO: What is this number?
-        self.r = rospy.Rate(15)
+        context.info("Calling rospy.init_node() successful")
 
     def on_received_seed(self, context: Context, data: int):
         np.random.seed(data)
@@ -65,31 +75,44 @@ class ROSBridge:
         Callback to listen to last outputted action from inverse_kinematics node
         Stores it and sustains same action until new message published on topic
         """
+        logger.info(f"Received wheels_cmd")
         vl = msg.vel_left
         vr = msg.vel_right
         self.action = np.array([vl, vr])
         self.updated = True
 
     def on_received_observations(self, context: Context, data: Duckiebot1Observations):
+        context.info("Received observations")
         jpg_data = data.camera.jpg_data
         obs = rgb_from_jpg(jpg_data)
 
         img_msg = compressed_img_from_rgb(obs)
+        context.info("Publishing image to ROS")
+
         self.pub_image.publish(img_msg)
 
         if not self.updated:
             vl = vr = 0
             self.action = np.array([vl, vr])
             self.updated = True
-
+        context.info("Publishing CameraInfo")
         self.pub_camera_info.publish(CameraInfo())
 
     def on_received_get_commands(self, context: Context, data: GetCommands):
+        context.info("Received request for GetCommands")
         # TODO: let's use a queue here. Performance suffers otherwise.
         # What you should do is: *get the last command*, if available
         # otherwise, wait for one command.
+        t0 = time.time()
+        MAX_WAIT = 2
         while not self.updated:
-            time.sleep(0.01)
+            context.info("Not update: await")
+            time.sleep(0.05)
+            dt = time.time() - t0
+            if dt > MAX_WAIT:
+                msg = "Received no commands for {MAX_WAIT}s. Bailing out, using previous commands. "
+                context.error(msg)
+                break
 
         pwm_left, pwm_right = self.action
         self.updated = False
