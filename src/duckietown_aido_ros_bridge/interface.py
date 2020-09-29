@@ -2,6 +2,7 @@ import argparse
 import os
 import subprocess
 import sys
+import traceback
 from multiprocessing import Queue
 from multiprocessing.context import Process
 from queue import Empty, Queue
@@ -141,6 +142,21 @@ class AIDOAgent:
         context.info("finish()")
 
 
+def wrap_for_errors(f):
+    def f2(*args, **kwargs):
+        logger.info(f"{f.__name__} started")
+        try:
+            f(*args, **kwargs)
+        except:
+            logger.error(f"{f.__name__} terminated", traceback=traceback.format_exc())
+            sys.exit(3)
+        else:
+            logger.info(f"{f.__name__} terminated gracefully")
+
+    return f2
+
+
+@wrap_for_errors
 def run_bridge(q_images, q_commands):
     logger.info("run_bridge started")
     bridge = ROSBridge(q_images, q_commands)
@@ -148,6 +164,7 @@ def run_bridge(q_images, q_commands):
     logger.info("run_bridge ended")
 
 
+@wrap_for_errors
 def run_agent(q_images, q_commands):
     logger.info("run_agent started")
     agent = AIDOAgent(q_images, q_commands)
@@ -155,6 +172,7 @@ def run_agent(q_images, q_commands):
     logger.info("run_agent ended")
 
 
+@wrap_for_errors
 def run_roslaunch(launch_file: str, q_init: Queue):
     logger.info("run_roslaunch started")
     my_env = os.environ.copy()
@@ -167,6 +185,7 @@ def run_roslaunch(launch_file: str, q_init: Queue):
     logger.info("run_roslaunch ended")
 
 
+@wrap_for_errors
 def run_ros_bridge_main(args=None):
     parser = argparse.ArgumentParser(args)
     parser.add_argument("--launch", required=True)
