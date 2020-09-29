@@ -169,7 +169,7 @@ def run_bridge(q_control, q_images, q_commands):
 
 
 @wrap_for_errors
-def run_agent(q_control, q_images, q_commands, q_init):
+def run_agent(q_control, q_images, q_commands):
     logger.info("run_agent started")
     agent = AIDOAgent(q_images, q_commands)
     wrap_direct(agent, protocol_agent_duckiebot1, args=[])
@@ -178,7 +178,7 @@ def run_agent(q_control, q_images, q_commands, q_init):
 
 
 @wrap_for_errors
-def run_roslaunch(q_control, launch_file: str, q_init: Queue):
+def run_roslaunch(q_control, launch_file: str):
     logger.info("run_roslaunch started")
     my_env = os.environ.copy()
     command = f"roslaunch {launch_file}"
