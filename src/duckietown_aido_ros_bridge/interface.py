@@ -47,7 +47,7 @@ class ROSBridge:
         topic = f"/{vehicle}/camera_node/image/compressed"
         queue_size = 10
         logger.info(f"Preparing publisher to {topic}; queue_size = {queue_size}")
-        self.pub_image: rospy.Publisher(topic, CompressedImage, queue_size=queue_size)
+        self.pub_image = rospy.Publisher(topic, CompressedImage, queue_size=queue_size)
 
         # Publisher for camera info - needed for the ground_projection
         topic = f"/{vehicle}/camera_node/camera_info"
