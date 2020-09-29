@@ -157,7 +157,7 @@ def wrap_for_errors(f):
 
 
 @wrap_for_errors
-def run_bridge(q_images, q_commands):
+def run_bridge(q_images, q_commands, q_init):
     logger.info("run_bridge started")
     bridge = ROSBridge(q_images, q_commands)
     bridge.go()
@@ -165,7 +165,7 @@ def run_bridge(q_images, q_commands):
 
 
 @wrap_for_errors
-def run_agent(q_images, q_commands):
+def run_agent(q_images, q_commands, q_init):
     logger.info("run_agent started")
     agent = AIDOAgent(q_images, q_commands)
     wrap_direct(agent, protocol_agent_duckiebot1)
