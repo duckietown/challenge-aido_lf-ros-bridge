@@ -40,7 +40,7 @@ version = get_version_from_source("src/duckietown_aido_ros_bridge/__init__.py")
 # with open(dependencies_file, 'rt') as fin:
 #     dependencies = list(filter(lambda line: not line.startswith('#'), fin.read().splitlines()))
 
-install_requires = []
+install_requires = ["aido-protocols-daffy"]
 tests_require = []
 
 # compile description
