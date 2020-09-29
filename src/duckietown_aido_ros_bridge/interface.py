@@ -191,13 +191,16 @@ def run_roslaunch(q_control, launch_file: str, q_init: Queue):
     time.sleep(1000)
 
 
-@wrap_for_errors
 def run_ros_bridge_main(args=None):
     parser = argparse.ArgumentParser(args)
     parser.add_argument("--launch", required=True)
     parsed = parser.parse_args(args)
     launch = parsed.launch
-    run_ros_bridge(launch)
+    try:
+        run_ros_bridge(launch)
+    except:
+        logger.error(traceback.format_exc())
+        sys.exit(2)
 
 
 def run_ros_bridge(launch_file: str):
