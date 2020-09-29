@@ -20,7 +20,9 @@ def run_roslaunch(q_control, launch_file: str):
     command = ["roslaunch", launch_file]
     logger.info(f"running {command}")
     try:
-        subprocess.check_call(command, env=my_env, stdout=sys.stdout, stderr=sys.stderr)
+        subprocess.check_call(
+            command, env=my_env
+        )  # , stdout=sys.stdout, stderr=sys.stderr)
     except subprocess.CalledProcessError as e:
         logger.error(traceback.format_exc())
         raise
