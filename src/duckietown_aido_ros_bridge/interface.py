@@ -38,6 +38,9 @@ def run_ros_bridge(launch_file: str):
     )
     p_roslaunch.start()
 
+    logger.info("waiting 10 seconds")
+    time.sleep(10)
+
     logger.info(f"starting run_bridge")
     p_rosnode = Process(
         target=run_bridge, args=(q_control, q_images, q_commands), name="rosnode"
