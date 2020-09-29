@@ -1,8 +1,11 @@
 import io
+import sys
+import traceback
 
 import cv2
 import numpy as np
 import rospy
+from aido_schemas import logger
 from PIL import Image
 from sensor_msgs.msg import CompressedImage
 
@@ -28,3 +31,19 @@ def compressed_img_from_rgb(rgb: np.ndarray) -> CompressedImage:
     contig = cv2.cvtColor(np.ascontiguousarray(rgb), cv2.COLOR_BGR2RGB)
     img_msg.data = np.array(cv2.imencode(".jpg", contig)[1]).tostring()
     return img_msg
+
+
+def wrap_for_errors(f):
+    def f2(q_control, *args, **kwargs):
+        logger.info(f"{f.__name__} started")
+        try:
+            f(q_control, *args, **kwargs)
+        except:
+            logger.error(f"{f.__name__} terminated", traceback=traceback.format_exc())
+            q_control.put((f.__name__, "error"))
+            sys.exit(3)
+        else:
+            q_control.put((f.__name__, "finished"))
+            logger.info(f"{f.__name__} terminated gracefully")
+
+    return f2
