@@ -46,6 +46,11 @@ class ROSBridge:
         self.action = np.array([0.0, 0.0])
         self.updated = True
 
+        # Initializes the node
+        logger.info("Calling rospy.init_node()")
+        rospy.init_node("ROSTemplate")
+        logger.info("Calling rospy.init_node() successful")
+
         # Get the vehicle name, which comes in as HOSTNAME
         vehicle = os.getenv("HOSTNAME")
         logger.info(f"Using vehicle = {vehicle}")
@@ -68,6 +73,7 @@ class ROSBridge:
         self.pub_camera_info = rospy.Publisher(topic, CameraInfo, queue_size=queue_size)
 
         def read_data(event):
+            logger.info("read_data called")
             data: Duckiebot1Observations
             try:
                 data = self.qimages.get(block=False, timeout=0.0)
@@ -84,12 +90,11 @@ class ROSBridge:
             logger.info("Publishing CameraInfo")
             self.pub_camera_info.publish(CameraInfo())
 
-        # Initializes the node
-        logger.info("Calling rospy.init_node()")
-        rospy.init_node("ROSTemplate")
-        logger.info("Calling rospy.init_node() successful")
-
         rospy.Timer(rospy.Duration(0.01), read_data)
+
+        logger.info("spin()")
+        rospy.spin()
+        logger.info("spin() ended")
 
     def on_ros_received_wheels_cmd(self, msg):
         """
@@ -123,12 +128,12 @@ class AIDOAgent:
 
     def on_received_get_commands(self, context: Context, data: GetCommands):
         context.info("Received request for GetCommands")
-        MAX_WAIT = 5
+        MAX_WAIT = 50
         try:
             action = self.qcommands.get(block=True, timeout=MAX_WAIT)
         except Empty:
             msg = f"Received no commands for {MAX_WAIT}s. Bailing out "
-            raise Exception(msg)
+            raise Exception(msg) from None
 
         pwm_left, pwm_right = action
 
@@ -180,12 +185,14 @@ def run_agent(q_control, q_images, q_commands):
 def run_roslaunch(q_control, launch_file: str):
     logger.info("run_roslaunch started")
     my_env = os.environ.copy()
-    command = f"roslaunch {launch_file}"
+    # command = f"roslaunch {launch_file}"
+    command = ["roslaunch", launch_file]
     logger.info("running", command=command)
-    p = subprocess.Popen(
-        command, shell=True, env=my_env, stdout=sys.stdout, stderr=sys.stderr
-    )
-    p.communicate()
+    subprocess.check_call(command, env=my_env, stdout=sys.stdout, stderr=sys.stderr)
+    # p = subprocess.Popen(
+    #     command, shell=True, env=my_env, stdout=sys.stdout, stderr=sys.stderr
+    # )
+    # p.communicate()
     logger.info("run_roslaunch ended")
     time.sleep(1000)
 
@@ -212,6 +219,8 @@ def run_ros_bridge(launch_file: str):
     p_roslaunch = Process(
         target=run_roslaunch, args=(q_control, launch_file,), name="roslaunch"
     )
+    p_roslaunch.start()
+
     # q_init.get()
     logger.info(f"starting run_bridge")
     p_rosnode = Process(
