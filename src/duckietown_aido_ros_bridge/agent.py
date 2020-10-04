@@ -40,7 +40,7 @@ class AIDOAgent:
 
     def on_received_get_commands(self, context: Context, data: GetCommands):
         self.logger.info("Received request for GetCommands")
-        MAX_WAIT = 50
+        MAX_WAIT = 5
         try:
             action = self.qcommands.get(block=True, timeout=MAX_WAIT)
         except Empty:

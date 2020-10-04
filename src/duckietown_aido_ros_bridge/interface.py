@@ -48,11 +48,11 @@ def run_ros_bridge(launch_file: str):
     )
     p_rosnode.start()
 
-    # logger.info(f"starting run_agent")
-    # p_agent = Process(
-    #     target=run_agent, args=(q_control, q_images, q_commands), name="aido_agent"
-    # )
-    # p_agent.start()
+    logger.info(f"starting run_agent")
+    p_agent = Process(
+        target=run_agent, args=(q_control, q_images, q_commands), name="aido_agent"
+    )
+    p_agent.start()
 
     while True:
         logger.info(f"looking for responses")
