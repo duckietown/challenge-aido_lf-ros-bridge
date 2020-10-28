@@ -4,12 +4,12 @@ from queue import Empty, Queue
 
 import numpy as np
 from aido_schemas import (
-    Duckiebot1Commands,
-    Duckiebot1Observations,
+    DB20Commands,
+    DB20Observations,
     EpisodeStart,
     GetCommands,
     LEDSCommands,
-    protocol_agent_duckiebot1,
+    protocol_agent_DB20,
     PWMCommands,
     RGB,
 )
@@ -34,7 +34,7 @@ class AIDOAgent:
         self.logger.info("Starting episode %s." % data)
         # TODO should we reset things?
 
-    def on_received_observations(self, context: Context, data: Duckiebot1Observations):
+    def on_received_observations(self, context: Context, data: DB20Observations):
         self.logger.info("Received observations")
         self.qimages.put(data)
 
@@ -52,7 +52,7 @@ class AIDOAgent:
         grey = RGB(0.5, 0.5, 0.5)
         led_commands = LEDSCommands(grey, grey, grey, grey, grey)
         pwm_commands = PWMCommands(motor_left=pwm_left, motor_right=pwm_right)
-        commands = Duckiebot1Commands(pwm_commands, led_commands)
+        commands = DB20Commands(pwm_commands, led_commands)
         context.write("commands", commands)
 
     def finish(self, context):
@@ -66,6 +66,6 @@ def run_agent(q_control, q_images, q_commands):
     logger.setLevel(logging.DEBUG)
 
     agent = AIDOAgent(q_images, q_commands, logger)
-    wrap_direct(agent, protocol_agent_duckiebot1, args=[])
+    wrap_direct(agent, protocol_agent_DB20, args=[])
     logger.info("run_agent ended")
     time.sleep(1000)

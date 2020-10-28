@@ -2,10 +2,13 @@ import logging
 import os
 import time
 from queue import Empty, Queue
-import rospy
-import numpy as np
-from aido_schemas import Duckiebot1Observations
 
+import numpy as np
+
+import rospy
+from aido_schemas import DB20Observations
+from duckietown_msgs.msg import WheelsCmdStamped
+from sensor_msgs.msg import CameraInfo, CompressedImage
 from .commons import compressed_img_from_rgb, rgb_from_jpg, wrap_for_errors
 
 
@@ -27,7 +30,7 @@ class ROSBridge:
         # Initializes the node
         self.logger.info("Calling rospy.init_node()")
         rospy.init_node("ROSTemplate")
-        rospy.info("Calling rospy.init_node() successful")
+        rospy.loginfo("Calling rospy.init_node() successful")
 
         # Get the vehicle name, which comes in as HOSTNAME
         vehicle = os.getenv("HOSTNAME")
@@ -52,7 +55,7 @@ class ROSBridge:
 
         def read_data(event):
             self.logger.info("read_data called")
-            data: Duckiebot1Observations
+            data: DB20Observations
             try:
                 data = self.qimages.get(block=False, timeout=0.0)
             except Empty:
