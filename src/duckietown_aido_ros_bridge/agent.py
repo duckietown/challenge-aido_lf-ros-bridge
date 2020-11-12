@@ -3,7 +3,9 @@ import time
 from queue import Empty, Queue
 
 import numpy as np
+
 from aido_schemas import (
+    Context,
     DB20Commands,
     DB20Observations,
     EpisodeStart,
@@ -12,10 +14,9 @@ from aido_schemas import (
     protocol_agent_DB20,
     PWMCommands,
     RGB,
+    wrap_direct,
 )
-from zuper_nodes_wrapper import Context, wrap_direct
-
-from duckietown_aido_ros_bridge.commons import wrap_for_errors
+from .commons import wrap_for_errors
 
 
 class AIDOAgent:
