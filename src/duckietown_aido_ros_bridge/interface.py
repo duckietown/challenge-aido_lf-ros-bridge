@@ -7,6 +7,7 @@ from multiprocessing.context import Process
 from queue import Queue
 
 from aido_schemas import logger
+from .agent import run_agent
 
 from .bridge import run_bridge
 from .launch import run_roslaunch
@@ -59,5 +60,6 @@ def run_ros_bridge(launch_file: str):
         d = q_control.get(block=True)
         logger.info(f"obtained {d}")
 
+    # noinspection PyUnreachableCode
     logger.info(f"waiting for agent to finish")
     p_agent.join()
