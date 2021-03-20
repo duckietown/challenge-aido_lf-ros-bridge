@@ -102,7 +102,7 @@ bump: # v2
 upload: # v3
 	dts build_utils check-not-dirty
 	dts build_utils check-tagged
-	dt-check-need-upload --package duckietown-aido-ros-bridge-daffy make upload-do
+	dts build_utils check-need-upload --package duckietown-aido-ros-bridge-daffy make upload-do
 
 upload-do:
 	rm -f dist/*
