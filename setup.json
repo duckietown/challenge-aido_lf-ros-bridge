@@ -1,0 +1,20 @@
+{
+  "install_requires": [
+    "aido-protocols-daffy"
+  ],
+  "tests_require": [],
+  "srcdir": "src",
+  "package_name": "duckietown-aido-ros-bridge-daffy",
+  "entry_points": {
+    "console_scripts": []
+  },
+  "zip_safe": true,
+  "include_package_data": true,
+  "modules": [
+    "duckietown_aido_ros_bridge"
+  ],
+  "version": "6.0.36",
+  "author": "",
+  "author_email": "",
+  "url": ""
+}
