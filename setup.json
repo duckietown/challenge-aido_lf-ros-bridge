@@ -1,6 +1,9 @@
 {
   "install_requires": [
-    "aido-protocols-daffy"
+    "Pillow",
+    "aido-protocols-daffy",
+    "numpy",
+    "opencv-python"
   ],
   "tests_require": [],
   "srcdir": "src",
