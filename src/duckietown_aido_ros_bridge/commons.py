@@ -11,7 +11,7 @@ from sensor_msgs.msg import CompressedImage
 
 
 def rgb_from_jpg(image_data: bytes) -> np.ndarray:
-    """ Reads JPG bytes as RGB"""
+    """Reads JPG bytes as RGB"""
     im = Image.open(io.BytesIO(image_data))
     im = im.convert("RGB")
     data = np.array(im)

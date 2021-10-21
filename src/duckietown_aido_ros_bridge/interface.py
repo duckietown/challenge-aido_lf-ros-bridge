@@ -36,7 +36,12 @@ def run_ros_bridge(launch_file: str):
 
     logger.info(f"starting run_ros_launch")
     p_roslaunch = Process(
-        target=run_roslaunch, args=(q_control, launch_file,), name="roslaunch"
+        target=run_roslaunch,
+        args=(
+            q_control,
+            launch_file,
+        ),
+        name="roslaunch",
     )
     p_roslaunch.start()
 
