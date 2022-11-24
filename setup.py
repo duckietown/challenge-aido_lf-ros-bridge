@@ -39,9 +39,10 @@ version = get_version_from_source("src/duckietown_aido_ros_bridge/__init__.py")
 # dependencies_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dependencies.txt')
 # with open(dependencies_file, 'rt') as fin:
 #     dependencies = list(filter(lambda line: not line.startswith('#'), fin.read().splitlines()))
+line = "daffy"
 
 install_requires = [
-    "aido-protocols-daffy",
+    f"aido-protocols-{line}",
     "numpy",
     "Pillow",
     "opencv-python",
